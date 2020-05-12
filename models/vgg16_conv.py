@@ -3,6 +3,8 @@ import torch.nn as nn
 import torchvision.models as models
 import torchvision
 
+from models.VGG16 import VGG16
+
 from collections import OrderedDict
 
 class Vgg16Conv(nn.Module):
@@ -61,7 +63,7 @@ class Vgg16Conv(nn.Module):
         )
 
         self.classifier = nn.Sequential(
-            nn.Linear(512 * 7 * 7, 4096),
+            nn.Linear(512 * 4 * 4, 4096),
             nn.ReLU(),
             nn.Dropout(),
             nn.Linear(4096, 4096),
@@ -84,7 +86,13 @@ class Vgg16Conv(nn.Module):
         """
         initial weights from preptrained model by vgg16
         """
-        vgg16_pretrained = models.vgg16(pretrained=True)
+        vgg16_pretrained = models.vgg16()
+        vgg16_pretrained.classifier[0].in_features = 512*4*4
+        vgg16_pretrained.classifier[6].out_features = 8
+        checkpoint_path = "/home/ziqizh/code/adversarial-learning-research/interpretebility/checkpoints/vgg_statedict.pt"
+        # checkpoint_path = "./checkpoints/vgg-celeb-gender.epoch-7.checkpoint.pth.tar"
+        # vgg16_pretrained = VGG16(num_classes=8)
+        vgg16_pretrained.load_state_dict(torch.load(checkpoint_path))
         # fine-tune Conv2d
         for idx, layer in enumerate(vgg16_pretrained.features):
             if isinstance(layer, nn.Conv2d):
@@ -93,12 +101,13 @@ class Vgg16Conv(nn.Module):
         # fine-tune Linear
         for idx, layer in enumerate(vgg16_pretrained.classifier):
             if isinstance(layer, nn.Linear):
+                print(layer)
                 self.classifier[idx].weight.data = layer.weight.data
                 self.classifier[idx].bias.data = layer.bias.data
     
-    def check(self):
-        model = models.vgg16(pretrained=True)
-        return model
+    # def check(self):
+    #     model = models.vgg16(pretrained=True)
+    #     return model
 
     def forward(self, x):
         for idx, layer in enumerate(self.features):
@@ -108,11 +117,11 @@ class Vgg16Conv(nn.Module):
             else:
                 x = layer(x)
         
-        # reshape to (1, 512 * 7 * 7)
         x = x.view(x.size()[0], -1)
+        print(self.classifier)
         output = self.classifier(x)
         return output
 
-if __name__ == '__main__':
-    model = models.vgg16(pretrained=True)
-    print(model)
+# if __name__ == '__main__':
+#     model = models.vgg16(pretrained=True)
+#     print(model)

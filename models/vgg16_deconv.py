@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torchvision.models as models
 
+from models.VGG16 import VGG16
+
 import sys
 
 class Vgg16Deconv(nn.Module):
@@ -67,7 +69,12 @@ class Vgg16Deconv(nn.Module):
         self.init_weight()
 
     def init_weight(self):
-        vgg16_pretrained = models.vgg16(pretrained=True)
+
+        # vgg16_pretrained = models.vgg16(pretrained=True)
+        # checkpoint_path = "/home/ziqizh/code/adversarial-learning-research/interpretebility/checkpoints/vgg_statedict.pt"
+        checkpoint_path = "/home/ziqizh/code/expGAN/pytorch_GAN_zoo/checkpoints/vgg_statedict.pt"
+        vgg16_pretrained = VGG16(num_classes=8)
+        vgg16_pretrained.load_state_dict(torch.load(checkpoint_path))
         for idx, layer in enumerate(vgg16_pretrained.features):
             if isinstance(layer, nn.Conv2d):
                 self.features[self.conv2deconv_indices[idx]].weight.data = layer.weight.data
