@@ -112,18 +112,23 @@ def vis_layer(layer, vgg16_conv, vgg16_deconv):
     # normalize
     # new_img = 1/(1 + np.exp(-new_img)) 
     print("max: ", new_img.max(), "min: ", new_img.min(), "mean: ", np.mean(new_img))
-    # new_img = (new_img - new_img.min()) / (new_img.max() - new_img.min()) * 255
-    new_img[:,:,0] = (new_img[:,:,0] - new_img[:,:,0].min()) / (new_img[:,:,0].max() - new_img[:,:,0].min()) * 255
-    new_img[:,:,1] = (new_img[:,:,1] - new_img[:,:,1].min()) / (new_img[:,:,1].max() - new_img[:,:,1].min()) * 255
-    new_img[:,:,2] = (new_img[:,:,2] - new_img[:,:,2].min()) / (new_img[:,:,2].max() - new_img[:,:,2].min()) * 255
+    # new_img = (new_img -  np.mean(new_img)) / (new_img.max() - new_img.min()) * 255
+    new_img[:,:,0] = (new_img[:,:,0] - np.mean(new_img[:,:,0])) / np.std(new_img[:,:,0])
+    new_img[:,:,0] = new_img[:,:,0] * 255 / new_img[:,:,0].max()
+    new_img[:,:,1] = (new_img[:,:,1] - np.mean(new_img[:,:,1])) / np.std(new_img[:,:,1])
+    new_img[:,:,1] = new_img[:,:,1] * 255 / new_img[:,:,1].max()
+    new_img[:,:,2] = (new_img[:,:,2] - np.mean(new_img[:,:,2])) / np.std(new_img[:,:,2])
+    new_img[:,:,2] = new_img[:,:,2] * 255 / new_img[:,:,2].max()
+    new_img = np.clip(new_img,0,255)
+
     # new_img = UnNormalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))(new_img) * 255
     # new_img = 1/(1 + np.exp(-new_img)) * 255
-    print("max: ", new_img.max(), "min: ", new_img.min(), "mean: ", np.mean(new_img))
+    print("max: ", new_img.max(), "min: ", new_img.min(), "mean: ", np.mean(new_img[:,:,2]))
     
     new_img = new_img.astype(np.uint8)
     # cv2.imshow('reconstruction img ' + str(layer), new_img)
     # cv2.waitKey()
-    return new_img, int(max_activation)
+    return new_img, max_activation
     
 
 if __name__ == '__main__':
@@ -147,17 +152,17 @@ if __name__ == '__main__':
     vgg16_deconv = Vgg16Deconv()
     vgg16_deconv.eval()
     plt.figure(num=None, figsize=(16, 12), dpi=80)
-    plt.subplot(2, 4, 1)
+    plt.subplot(2, 3, 1)
     plt.title('original picture')
     transform = transforms.Compose([transforms.Resize((128, 128))])
     # img = cv2.imread(img_path)
     # img = cv2.resize(img, (128, 128))
     img = transform(Image.open(img_path))
     plt.imshow(img)
-    for idx, layer in enumerate([16, 23, 25, 28, 30, 32, 34]):
+    for idx, layer in enumerate([2, 7, 16, 25, 34]):
     # for idx, layer in enumerate(vgg16_conv.conv_layer_indices):
         print("current layer:", layer)
-        plt.subplot(2, 4, idx+2)
+        plt.subplot(2, 3, idx+2)
         img, activation = vis_layer(layer, vgg16_conv, vgg16_deconv)
         plt.title(f'{layer} layer, the max activations is {activation}')
         # img = img[112:,112:,:]
