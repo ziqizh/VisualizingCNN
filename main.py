@@ -14,7 +14,7 @@ from PIL import Image
 
 from models import Vgg16Conv
 from models import Vgg16Deconv
-from utils import decode_predictions
+from utils import *
 
 def load_images(img_path):
     # imread from img_path
@@ -30,8 +30,7 @@ def load_images(img_path):
     #     transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])
     #     ])
 
-    transform = transforms.Compose([transforms.CenterCrop((178, 178)),
-                                       transforms.Resize((128, 128)),
+    transform = transforms.Compose([transforms.Resize((128, 128)),
                                        #transforms.Grayscale(),                                       
                                        #transforms.Lambda(lambda x: x/255.),
                                        transforms.ToTensor(),
@@ -113,7 +112,13 @@ def vis_layer(layer, vgg16_conv, vgg16_deconv):
     # normalize
     # new_img = 1/(1 + np.exp(-new_img)) 
     print("max: ", new_img.max(), "min: ", new_img.min(), "mean: ", np.mean(new_img))
-    new_img = (new_img - new_img.min()) / (new_img.max() - new_img.min()) * 255
+    # new_img = (new_img - new_img.min()) / (new_img.max() - new_img.min()) * 255
+    new_img[:,:,0] = (new_img[:,:,0] - new_img[:,:,0].min()) / (new_img[:,:,0].max() - new_img[:,:,0].min()) * 255
+    new_img[:,:,1] = (new_img[:,:,1] - new_img[:,:,1].min()) / (new_img[:,:,1].max() - new_img[:,:,1].min()) * 255
+    new_img[:,:,2] = (new_img[:,:,2] - new_img[:,:,2].min()) / (new_img[:,:,2].max() - new_img[:,:,2].min()) * 255
+    # new_img = UnNormalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))(new_img) * 255
+    # new_img = 1/(1 + np.exp(-new_img)) * 255
+    print("max: ", new_img.max(), "min: ", new_img.min(), "mean: ", np.mean(new_img))
     
     new_img = new_img.astype(np.uint8)
     # cv2.imshow('reconstruction img ' + str(layer), new_img)
@@ -123,17 +128,18 @@ def vis_layer(layer, vgg16_conv, vgg16_deconv):
 
 if __name__ == '__main__':
     
-    img_path = '/home/ziqizh/data/CelebA/Img/img_align_celeba/182638.jpg'
+    img_path = '182809.jpg'
     # img_path = "/home/ziqizh/code/adversarial-learning-research/interpretebility/test_img.png"
 
     # forward processing
     img = load_images(img_path)
-    vgg16_conv = Vgg16Conv(num_cls=8)
+    vgg16_conv = Vgg16Conv(num_cls=2)
     vgg16_conv.eval()
     store(vgg16_conv)
     conv_output = vgg16_conv(img)
     pool_locs = vgg16_conv.pool_locs
-    # print('Predicted:', decode_predictions(conv_output, top=3)[0])
+    print(conv_output)
+    # print('Predicted:', decode_predictions(conv_output, top=1)[0])
     
 
     
@@ -143,14 +149,14 @@ if __name__ == '__main__':
     plt.figure(num=None, figsize=(16, 12), dpi=80)
     plt.subplot(2, 4, 1)
     plt.title('original picture')
-    transform = transforms.Compose([transforms.CenterCrop((178, 178)),
-                                       transforms.Resize((128, 128))])
+    transform = transforms.Compose([transforms.Resize((128, 128))])
     # img = cv2.imread(img_path)
     # img = cv2.resize(img, (128, 128))
     img = transform(Image.open(img_path))
     plt.imshow(img)
-    for idx, layer in enumerate([14, 17, 19, 21, 24, 26, 28]):
-    # for idx, layer in enumerate(vgg16_conv.conv_layer_indices):        
+    for idx, layer in enumerate([16, 23, 25, 28, 30, 32, 34]):
+    # for idx, layer in enumerate(vgg16_conv.conv_layer_indices):
+        print("current layer:", layer)
         plt.subplot(2, 4, idx+2)
         img, activation = vis_layer(layer, vgg16_conv, vgg16_deconv)
         plt.title(f'{layer} layer, the max activations is {activation}')

@@ -7,7 +7,26 @@ import torch
 """
 this file is utils lib
 """
+class UnNormalize(object):
+    def __init__(self, mean, std):
+        self.mean = mean
+        self.std = std
 
+    def __call__(self, img):
+        """
+        Args:
+            tensor (Tensor): Tensor image of size (C, H, W) to be normalized.
+        Returns:
+            Tensor: Normalized image.
+        """
+        print("image size", img.shape)
+        # img[:,:,0] = (img[:,:,0] * self.std[0]) + self.mean[0]
+        # img[:,:,1] = img[:,:,1] * self.std[1] + self.mean[1]
+        # img[:,:,2] = img[:,:,2] * self.std[2] + self.mean[2]
+        img[:,:,0] = (img[:,:,0] * (img[:,:,0].max() - img[:,:,0].min())) + img[:,:,0].min()
+        img[:,:,1] = (img[:,:,1] * (img[:,:,1].max() - img[:,:,1].min())) + img[:,:,1].min()
+        img[:,:,2] = (img[:,:,2] * (img[:,:,2].max() - img[:,:,2].min())) + img[:,:,2].min()
+        return img
 
 def decode_predictions(preds, top=5):
     """Decode the prediction of an ImageNet model
